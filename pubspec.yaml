@@ -27,6 +27,7 @@ dependencies:
   ext_storage:
   path:
   permission_handler:
+  photo_view:
 
 
   # The following adds the Cupertino Icons font to your application.

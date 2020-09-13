@@ -40,6 +40,10 @@ class StorageManager {
 
   prepareFolder() async {
     Directory _picsFolder = await this.picsFolder;
+    var status = await Permission.storage.status;
+    if (!status.isGranted) {
+      await Permission.storage.request();
+    }
     if (await Permission.storage.request().isGranted) {
       final exists = await (await this.picsFolder).exists();
       if (!exists) {
@@ -69,6 +73,12 @@ class StorageManager {
       if (file is File) {
         file.delete();
       }
+    }
+  }
+
+  deletePicFile(Pic pic) async {
+    if (await pic.file.exists()){
+      pic.file.delete();
     }
   }
 }
