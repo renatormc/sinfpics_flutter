@@ -3,27 +3,43 @@ import 'package:ext_storage/ext_storage.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sinfpics_flutter/pic.dart';
+import 'package:path_provider/path_provider.dart';
+
 
 class StorageManager {
   Future<Directory> picsFolder;
+  Future<Directory> thumbsFolder;
+
   StorageManager();
 
   Future init() async {
-    this.picsFolder = this.resolveDir();
+    this.picsFolder = this.resolvePicsFolder();
+    this.thumbsFolder = this.resolveThumbsFolder();
   }
 
-  Future<Directory> resolveDir() async {
+  Future<Directory> resolvePicsFolder() async {
     return Directory(p.join(
         await ExtStorage.getExternalStoragePublicDirectory(
             ExtStorage.DIRECTORY_PICTURES),
         "sinfpics"));
   }
 
+  Future<Directory> resolveThumbsFolder() async {
+    return Directory(
+        p.join((await getApplicationDocumentsDirectory()).path, "thumbnails"));
+  }
+
+
+
+
   Future<Pic> movePicture(String path, String name) async {
     var _picsFolder = await this.picsFolder;
+    var _thumbsFolder = await this.thumbsFolder;
     await prepareFolder();
     var file = File(path);
-    var ext = file.path.split(".").last;
+    var ext = file.path
+        .split(".")
+        .last;
     var newName = name;
     var fullName = "$name.$ext";
     var destPath = p.join(_picsFolder.path, fullName);
@@ -35,19 +51,28 @@ class StorageManager {
       i++;
     }
     file = await file.rename(destPath);
-    return Pic(newName, file);
+    var pic = Pic(newName, file);
+    return pic;
   }
 
   prepareFolder() async {
     Directory _picsFolder = await this.picsFolder;
+    Directory _thumbsFolder = await this.thumbsFolder;
     var status = await Permission.storage.status;
     if (!status.isGranted) {
       await Permission.storage.request();
     }
-    if (await Permission.storage.request().isGranted) {
-      final exists = await (await this.picsFolder).exists();
+    if (await Permission.storage
+        .request()
+        .isGranted) {
+      var exists = await (await this.picsFolder).exists();
       if (!exists) {
         _picsFolder.createSync(recursive: true);
+      }
+
+      exists = await (await this.thumbsFolder).exists();
+      if (!exists) {
+        _thumbsFolder.createSync(recursive: true);
       }
     }
   }
@@ -74,11 +99,19 @@ class StorageManager {
         file.delete();
       }
     }
+
+    var __thumbsFolder = await this.thumbsFolder;
+    for (var file in __thumbsFolder.listSync()) {
+      if (file is File) {
+        file.delete();
+      }
+    }
   }
 
   deletePicFile(Pic pic) async {
-    if (await pic.file.exists()){
-      pic.file.delete();
+    if (await pic.file.exists()) {
+      await pic.deleteThumb();
+      await pic.file.delete();
     }
   }
 }

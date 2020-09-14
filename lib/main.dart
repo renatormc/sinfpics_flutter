@@ -214,12 +214,13 @@ class _MyHomePageState extends State<MyHomePage> {
             "É preciso definir um nome para o objeto antes de tirar a foto.");
         return;
       }
-      final pickedFile = await picker.getImage(source: ImageSource.camera);
+      final pickedFile = await picker.getImage(source: ImageSource.camera, imageQuality: 1);
       var pic = await storageManager.movePicture(
           pickedFile.path, objNameController.text);
       setState(() {
         pics.add(pic);
       });
+      print("Tirou foto");
     }
   }
 
@@ -262,7 +263,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
 
-                // _image == null ? Text('No image selected.') : Image.file(_image),
+
                 Expanded(
                   child: GridView.builder(
                     itemCount: pics.length,
@@ -290,7 +291,18 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: Column(
                               children: [
                                 Expanded(
-                                  child: Image.file(pics[index].file),
+                                  child: FutureBuilder(
+                                    future: pics[index].thumb,
+                                    builder: (context, snapshot){
+                                      if(snapshot.hasData){
+                                        return Image.file(snapshot.data);
+                                      }else{
+                                        return Center(
+                                          child: CircularProgressIndicator(),
+                                        );
+                                      }
+                                    },
+                                  ),
                                 ),
                                 Text(pics[index].name),
                               ],
